@@ -1,10 +1,13 @@
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, declarative_base
+from app.config import get_settings
 
-DATABASE_URL = "postgresql://postgres:Satyam%404050@localhost:5432/ecommerce_db"
+settings = get_settings()
 
-engine = create_engine(DATABASE_URL)
-SessionLocal = sessionmaker(bind=engine)
+engine = create_engine(settings.DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+Base = declarative_base()
 
 
 def get_db():

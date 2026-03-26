@@ -1,0 +1,72 @@
+version: "3.9"
+
+services:
+  # PostgreSQL database
+  db:
+    image: postgres:16-alpine
+    container_name: ecommerce-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Satyam@4050
+      POSTGRES_DB: ecommerce_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Redis cache
+  redis:
+    image: redis:7-alpine
+    container_name: ecommerce-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # FastAPI backend
+  backend:
+    build: ./ecommerce-backend
+    container_name: ecommerce-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://postgres:Satyam%404050@db:5432/ecommerce_db
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: supersecretkey-change-in-production
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./ecommerce-backend:/app
+
+  # React frontend (dev mode)
+  frontend:
+    build: ./ecommerce-frontend
+    container_name: ecommerce-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    volumes:
+      - ./ecommerce-frontend:/app
+      - /app/node_modules
+
+volumes:
+  postgres_data:
+  redis_data:
